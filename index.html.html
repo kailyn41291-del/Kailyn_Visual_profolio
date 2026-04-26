@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>P_HUA // VISUAL ARTIST</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap');
+
+:root {
+  --bg: #080808;
+  --bg2: #0f0f0f;
+  --accent: #e8e8e0;
+  --accent2: #aaaaaa;
+  --white: #e8e8e0;
+  --muted: #3a3a3a;
+  --dim: rgba(232,232,224,0.04);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+html, body { scrollbar-width: none; -ms-overflow-style: none; }
+html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
+
+body {
+  background: var(--bg);
+  color: var(--white);
+  font-family: 'Space Mono', monospace;
+  overflow-x: hidden;
+  cursor: none;
+}
+
+/* ── CURSOR ── */
+#cur-outer {
+  position: fixed; width: 40px; height: 40px;
+  border: 1px solid var(--accent); border-radius: 50%;
+  pointer-events: none; z-index: 9999;
+  transform: translate(-50%,-50%);
+  transition: transform .15s ease, width .25s, height .25s, border-color .25s;
+  mix-blend-mode: exclusion;
+}
+#cur-inner {
+  position: fixed; width: 6px; height: 6px;
+  background: var(--accent); border-radius: 50%;
+  pointer-events: none; z-index: 9999;
+  transform: translate(-50%,-50%);
+}
+#cur-outer.hover { width: 70px; height: 70px; border-color: var(--accent); }
+
+/* ── NOISE OVERLAY ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 1000; pointer-events: none;
+  opacity: .028;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-size: 200px;
+}
+
+/* ── SCANLINE ── */
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 999; pointer-events: none;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.04) 2px, rgba(0,0,0,.04) 4px);
+}
+
+/* ── NAV ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0;
+  z-index: 500; padding: 20px 40px;
+  display: flex; justify-content: space-between; align-items: center;
+  border-bottom: 1px solid rgba(232,232,224,0.06);
+  backdrop-filter: blur(12px);
+  background: rgba(5,5,8,.7);
+}
+.nav-logo {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800; font-size: 16px;
+  letter-spacing: .05em; color: var(--accent);
+}
+.nav-logo span { color: var(--white); }
+.nav-links { display: flex; gap: 36px; }
+.nav-links a {
+  font-size: 10px; letter-spacing: .25em; text-transform: uppercase;
+  color: var(--muted); text-decoration: none;
+  transition: color .2s; position: relative;
+}
+.nav-links a::after {
+  content: ''; position: absolute; bottom: -4px; left: 0;
+  width: 0; height: 1px; background: var(--accent);
+  transition: width .3s;
+}
+.nav-links a:hover { color: var(--accent); }
+.nav-links a:hover::after { width: 100%; }
+.nav-status {
+  font-size: 9px; letter-spacing: .2em; color: #666;
+  display: flex; align-items: center; gap: 8px;
+}
+.status-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: #aaa;
+  animation: blink 2s infinite;
+}
+@keyframes blink { 0%,100% {opacity:1} 50% {opacity:.2} }
+
+/* ── GLOBAL SHADER CANVAS ── */
+#hero-canvas {
+  position: fixed; inset: 0; z-index: -1;
+  width: 100%; height: 100%;
+  pointer-events: none;
+}
+
+/* ── HERO ── */
+#hero {
+  min-height: 100vh; display: flex; flex-direction: column;
+  justify-content: center; padding: 140px 40px 80px;
+  position: relative;
+}
+#hero::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 240px;
+  background: linear-gradient(to bottom, transparent, rgba(8,8,8,.96));
+  pointer-events: none;
+}
+
+.hero-eyebrow {
+  font-size: 10px; letter-spacing: .4em; color: var(--accent);
+  text-transform: uppercase; margin-bottom: 32px;
+  opacity: 0; animation: slideIn .6s .2s forwards;
+}
+.hero-eyebrow span { color: var(--muted); }
+
+.hero-name {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(56px, 10vw, 130px);
+  font-weight: 800; line-height: .95;
+  letter-spacing: -.02em;
+  color: var(--white);
+  margin-bottom: 12px;
+  opacity: 0; animation: slideIn .7s .4s forwards;
+  position: relative; z-index: 1;
+}
+.hero-name .accent { color: var(--accent); display: inline-block; }
+
+.hero-role {
+  font-size: clamp(11px, 1.6vw, 14px); letter-spacing: .3em;
+  text-transform: uppercase; color: var(--muted);
+  margin-bottom: 48px;
+  opacity: 0; animation: slideIn .7s .6s forwards;
+}
+
+.hero-bio {
+  max-width: 540px;
+  font-size: 13px; line-height: 2; color: rgba(232,232,224,.5);
+  margin-bottom: 56px;
+  opacity: 0; animation: slideIn .7s .8s forwards;
+}
+
+.hero-actions {
+  display: flex; gap: 20px; align-items: center;
+  opacity: 0; animation: slideIn .7s 1s forwards;
+}
+.btn-primary {
+  padding: 14px 32px;
+  background: var(--white); color: var(--bg);
+  font-family: 'Space Mono', monospace;
+  font-size: 10px; letter-spacing: .25em; text-transform: uppercase;
+  border: none; cursor: none; text-decoration: none;
+  display: inline-flex; align-items: center; gap: 10px;
+  transition: transform .2s, box-shadow .2s;
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(232,232,224,.15);
+}
+.btn-ghost {
+  font-size: 10px; letter-spacing: .25em; color: var(--muted);
+  text-transform: uppercase; text-decoration: none;
+  border-bottom: 1px solid var(--muted); padding-bottom: 2px;
+  transition: color .2s, border-color .2s;
+}
+.btn-ghost:hover { color: var(--white); border-color: var(--white); }
+
+.hero-ticker {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  border-top: 1px solid rgba(232,232,224,.08);
+  padding: 12px 0; overflow: hidden;
+  opacity: 0; animation: fadeIn 1s 1.5s forwards;
+}
+.ticker-inner {
+  display: flex; gap: 60px; white-space: nowrap;
+  animation: ticker 30s linear infinite;
+  font-size: 10px; letter-spacing: .2em; color: var(--muted);
+  text-transform: uppercase;
+}
+.ticker-inner span { color: var(--accent); margin-right: 8px; }
+@keyframes ticker { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+
+/* ── SECTION BASE ── */
+section { padding: 120px 40px; position: relative; background: transparent; }
+
+/* semi-transparent dark wash behind text in each content section */
+section::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: rgba(8,8,8,.72);
+}
+section > * { position: relative; z-index: 1; }
+
+/* hero needs no wash — shader is the hero */
+#hero::before { display: none; }
+.section-label {
+  font-size: 9px; letter-spacing: .4em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 16px;
+  display: flex; align-items: center; gap: 12px;
+}
+.section-label::before {
+  content: ''; display: inline-block; width: 30px; height: 1px; background: var(--accent);
+}
+.section-title {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(32px, 5vw, 60px); font-weight: 800;
+  line-height: 1; letter-spacing: -.02em;
+  margin-bottom: 60px;
+}
+
+/* ── ABOUT ── */
+#about { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+.about-left {}
+.about-text { font-size: 13px; line-height: 2.1; color: rgba(232,232,224,.6); margin-bottom: 20px; }
+.about-en { font-style: italic; font-size: 12px; line-height: 2; color: rgba(232,232,224,.3); margin-bottom: 40px; }
+
+.about-stats { display: grid; grid-template-columns: 1fr; gap: 1px; border: 1px solid var(--muted); }
+.stat { padding: 24px; border: 1px solid var(--muted); background: rgba(8,8,8,.55); }
+.stat-num {
+  font-family: 'Syne', sans-serif; font-size: 40px; font-weight: 800;
+  color: var(--accent); line-height: 1; margin-bottom: 6px;
+}
+.stat-label { font-size: 9px; letter-spacing: .2em; color: var(--muted); text-transform: uppercase; }
+
+.about-right {}
+.portrait-wrap {
+  position: relative; width: 100%; aspect-ratio: 3/4; overflow: hidden;
+  border: 1px solid rgba(232,232,224,.12);
+}
+.portrait-wrap img {
+  width: 100%; height: 100%; object-fit: cover; object-position: center top;
+  filter: grayscale(1) brightness(.85) contrast(1.05);
+  transition: filter .8s cubic-bezier(.25,.46,.45,.94), transform .8s cubic-bezier(.25,.46,.45,.94);
+}
+.portrait-wrap:hover img {
+  filter: grayscale(0) brightness(1) contrast(1.05);
+  transform: scale(1.03);
+}
+.portrait-label {
+  position: absolute; bottom: 16px; right: 16px;
+  font-size: 9px; letter-spacing: .15em; color: rgba(232,232,224,.4); text-transform: uppercase;
+}
+
+/* ── EXPERIENCE ── */
+#experience {}
+.exp-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 1px; background: var(--muted); }
+.exp-col { background: rgba(8,8,8,.5); padding: 40px 32px; }
+.exp-year {
+  font-size: 9px; letter-spacing: .3em; color: var(--accent); text-transform: uppercase;
+  margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--muted);
+}
+.exp-role {
+  font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700;
+  margin-bottom: 16px; color: var(--white); line-height: 1.2;
+}
+.exp-items { list-style: none; }
+.exp-items li {
+  font-size: 11px; line-height: 1.9; color: rgba(232,232,224,.5);
+  padding-left: 14px; position: relative;
+}
+.exp-items li::before {
+  content: '→'; position: absolute; left: 0; color: var(--accent); font-size: 9px;
+}
+.exp-items li.highlight { color: rgba(232,232,224,.5); }
+
+/* ── WORKS ── */
+#works {}
+.works-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
+.work-item {
+  position: relative; overflow: hidden; aspect-ratio: 16/10;
+  background: rgba(8,8,8,.4); border: 1px solid rgba(232,232,224,.08);
+  cursor: none;
+}
+.work-item.large { grid-column: span 2; aspect-ratio: 21/9; }
+.work-item img {
+  width: 100%; height: 100%; object-fit: cover;
+  filter: grayscale(1) brightness(.55);
+  transition: filter 1s cubic-bezier(.16,1,.3,1), transform 1.2s cubic-bezier(.16,1,.3,1);
+  transform-origin: center center;
+}
+.work-item:hover img {
+  filter: grayscale(0) brightness(.88);
+  transform: scale(1.08);
+}
+/* sliding light reveal line */
+.work-item::after {
+  content: '';
+  position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
+  background: linear-gradient(to right, transparent, rgba(255,255,255,.06), transparent);
+  transition: left .8s cubic-bezier(.16,1,.3,1);
+  pointer-events: none; z-index: 2;
+}
+.work-item:hover::after { left: 140%; }
+.work-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(5,5,8,.95) 0%, transparent 60%);
+  padding: 28px; display: flex; flex-direction: column; justify-content: flex-end;
+}
+.work-num { font-size: 9px; letter-spacing: .2em; color: var(--accent); margin-bottom: 8px; }
+.work-title {
+  font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700;
+  color: var(--white); margin-bottom: 6px;
+}
+.work-meta { font-size: 9px; letter-spacing: .15em; color: var(--muted); text-transform: uppercase; }
+.work-arrow {
+  position: absolute; top: 24px; right: 24px;
+  width: 40px; height: 40px;
+  border: 1px solid rgba(232,232,224,.2); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transform: translate(8px,-8px);
+  transition: opacity .3s, transform .3s;
+  color: var(--accent);
+}
+.work-item:hover .work-arrow { opacity: 1; transform: translate(0,0); }
+
+/* ── SKILLS ── */
+#skills {}
+.skills-layout { display: grid; grid-template-columns: 1fr 2fr; gap: 80px; }
+.skills-intro {}
+.skills-intro p { font-size: 13px; line-height: 2; color: rgba(232,232,224,.5); }
+.skills-list {}
+.skill-category { margin-bottom: 36px; }
+.skill-cat-title {
+  font-size: 9px; letter-spacing: .3em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 16px;
+  display: flex; align-items: center; gap: 10px;
+}
+.skill-cat-title::after { content: ''; flex: 1; height: 1px; background: var(--muted); }
+.skill-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.skill-tag {
+  padding: 7px 14px;
+  border: 1px solid var(--muted); font-size: 10px;
+  letter-spacing: .1em; color: rgba(232,232,224,.6);
+  transition: border-color .2s, color .2s, background .2s;
+  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+}
+.skill-tag:hover { border-color: var(--accent); color: var(--accent); background: var(--dim); }
+
+/* ── CONTACT ── */
+#contact {
+  min-height: 60vh; display: flex; flex-direction: column;
+  justify-content: center; align-items: center; text-align: center;
+  position: relative; overflow: hidden;
+}
+.contact-bg-text {
+  position: absolute; font-family: 'Syne', sans-serif; font-weight: 800;
+  font-size: clamp(80px, 18vw, 240px); color: rgba(232,232,224,.025);
+  letter-spacing: -.04em; white-space: nowrap; pointer-events: none;
+  user-select: none;
+}
+.contact-label { font-size: 9px; letter-spacing: .4em; color: var(--accent); text-transform: uppercase; margin-bottom: 24px; }
+.contact-title {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(40px, 7vw, 90px); font-weight: 800;
+  line-height: .95; letter-spacing: -.02em; margin-bottom: 48px;
+}
+.contact-links { display: flex; flex-direction: column; gap: 20px; align-items: center; }
+.contact-link {
+  font-size: 13px; letter-spacing: .1em; color: rgba(232,232,224,.5);
+  text-decoration: none; display: flex; gap: 20px; align-items: center;
+  transition: color .2s;
+}
+.contact-link:hover { color: var(--accent); }
+.contact-link span { color: var(--accent); font-size: 10px; letter-spacing: .2em; }
+
+/* ── FOOTER ── */
+footer {
+  padding: 24px 40px; border-top: 1px solid var(--muted);
+  display: flex; justify-content: space-between; align-items: center;
+  background: rgba(8,8,8,.8); position: relative; z-index: 1;
+}
+.footer-logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 13px; color: var(--accent); }
+.footer-copy { font-size: 9px; letter-spacing: .2em; color: var(--muted); text-transform: uppercase; }
+
+/* ── ANIMATIONS ── */
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+.reveal {
+  opacity: 0; transform: translateY(32px);
+  transition: opacity .8s cubic-bezier(.25,.46,.45,.94), transform .8s cubic-bezier(.25,.46,.45,.94);
+}
+.reveal.visible { opacity: 1; transform: translateY(0); }
+.reveal-delay-1 { transition-delay: .1s; }
+.reveal-delay-2 { transition-delay: .2s; }
+.reveal-delay-3 { transition-delay: .3s; }
+
+/* ── 3D TILT ── */
+.tilt { transform-style: preserve-3d; will-change: transform; }
+
+/* ── COLLECTION EXPAND TAG ── */
+.work-expand-tag {
+  position: absolute; top: 20px; left: 20px;
+  font-size: 9px; letter-spacing: .2em; color: var(--accent);
+  text-transform: uppercase;
+  border: 1px solid rgba(232,232,224,.2);
+  padding: 5px 10px;
+  background: rgba(8,8,8,.6);
+}
+
+/* ── LIGHTBOX ── */
+#lightbox {
+  position: fixed; inset: 0; z-index: 2000;
+  background: rgba(5,5,8,.95);
+  backdrop-filter: blur(20px);
+  display: none; align-items: center; justify-content: center;
+  padding: 60px 40px 40px;
+}
+#lightbox.open { display: flex; }
+.lb-close {
+  position: absolute; top: 24px; right: 32px;
+  background: none; border: 1px solid var(--muted);
+  color: var(--white); font-size: 14px;
+  width: 40px; height: 40px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: border-color .2s, color .2s;
+}
+.lb-close:hover { border-color: var(--white); }
+.lb-inner {
+  width: 100%; max-width: 1200px; max-height: 90vh;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.lb-inner::-webkit-scrollbar { display: none; }
+.lb-header { margin-bottom: 32px; }
+.lb-title {
+  font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800;
+  color: var(--white); margin-bottom: 8px;
+}
+.lb-meta { font-size: 10px; letter-spacing: .2em; color: var(--muted); text-transform: uppercase; }
+.lb-grid {
+  display: flex; flex-direction: column; gap: 4px;
+}
+.lb-item { position: relative; overflow: hidden; width: 100%; background: var(--bg2); }
+.lb-item img {
+  width: 100%; height: auto; display: block;
+  filter: grayscale(1) brightness(.7);
+  transition: filter .6s, transform .8s cubic-bezier(.25,.46,.45,.94);
+}
+.lb-item:hover img { filter: grayscale(0) brightness(.95); transform: scale(1.02); }
+.lb-item video {
+  width: 100%; height: auto; display: block;
+}
+.lb-item.wide { grid-column: unset; }
+@media (max-width: 900px) {
+  #about { grid-template-columns: 1fr; }
+  .exp-grid { grid-template-columns: 1fr; }
+  .works-grid { grid-template-columns: 1fr; }
+  .work-item.large { grid-column: span 1; }
+  .skills-layout { grid-template-columns: 1fr; }
+  nav { padding: 16px 20px; }
+  section { padding: 80px 20px; }
+  #hero { padding: 120px 20px 60px; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="hero-canvas"></canvas>
+<div id="cur-outer"></div>
+<div id="cur-inner"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">P_<span>HUA</span></div>
+  <div class="nav-links">
+    <a href="#about">Profile</a>
+    <a href="#experience">Log</a>
+    <a href="#works">Works</a>
+    <a href="#contact">Contact</a>
+  </div>
+  <div class="nav-status">
+    <div class="status-dot"></div>
+    AVAILABLE · 2026
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div style="position:relative;z-index:2">
+    <div class="hero-eyebrow">// PROFILE_INTEGRATED <span>· VJ · MOTION · PM · DEV</span></div>
+    <h1 class="hero-name">
+      P_<span class="accent">HUA</span>
+    </h1>
+    <div class="hero-role">Visual Artist &nbsp;/&nbsp; VJ &nbsp;/&nbsp; Motion Designer &nbsp;/&nbsp; Project Manager</div>
+    <p class="hero-bio">源自街舞攝影背景，習慣於快門間觀察肢體的節奏與流動。<br>目前將這份直覺延伸至 VJ 現場調度與 2D/3D 動態設計，<br>專注於流體模擬與金屬質感的視覺實作。<br><br>除了現場執行與動畫製作，也在專案中擔任 PM 角色負責統籌溝通。<br>近期開始接觸軟體開發，試著優化 VJ 現場執行的流程，<br>並在 Live Effect 的即興實踐中，持續探索技術與視覺感性結合的更多可能。</p>
+    <div class="hero-actions">
+      <a href="#works" class="btn-primary">View Works ↗</a>
+      <a href="#contact" class="btn-ghost">Get in touch</a>
+    </div>
+  </div>
+  <div class="hero-ticker">
+    <div class="ticker-inner">
+      <span>●</span> VJ & Visual Artist &nbsp;&nbsp;&nbsp;
+      <span>●</span> Motion Project Manager &nbsp;&nbsp;&nbsp;
+      <span>●</span> 臺灣燈會 2026 &nbsp;&nbsp;&nbsp;
+      <span>●</span> 四把椅子《太陽》 &nbsp;&nbsp;&nbsp;
+      <span>●</span> Motion Designer &nbsp;&nbsp;&nbsp;
+      <span>●</span> 台灣祭 · 浪人祭 · 風神祭 &nbsp;&nbsp;&nbsp;
+      <span>●</span> TouchDesigner &nbsp;&nbsp;&nbsp;
+      <span>●</span> 品冠《三十如一》上海站 &nbsp;&nbsp;&nbsp;
+      <span>●</span> Street Dance Photographer &nbsp;&nbsp;&nbsp;
+      <span>●</span> VJ & Visual Artist &nbsp;&nbsp;&nbsp;
+      <span>●</span> Motion Project Manager &nbsp;&nbsp;&nbsp;
+      <span>●</span> 臺灣燈會 2026 &nbsp;&nbsp;&nbsp;
+      <span>●</span> 四把椅子《太陽》 &nbsp;&nbsp;&nbsp;
+      <span>●</span> Motion Designer &nbsp;&nbsp;&nbsp;
+      <span>●</span> 台灣祭 · 浪人祭 · 風神祭 &nbsp;&nbsp;&nbsp;
+      <span>●</span> TouchDesigner &nbsp;&nbsp;&nbsp;
+      <span>●</span> 品冠《三十如一》上海站 &nbsp;&nbsp;&nbsp;
+      <span>●</span> Street Dance Photographer &nbsp;&nbsp;&nbsp;
+    </div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="about-left reveal">
+    <div class="section-label">// ABOUT_ME</div>
+    <h2 class="section-title">Who<br>I am.</h2>
+    <p class="about-text">莊姵嬅（Kailyn）源自街舞攝影背景，習慣於快門間觀察肢體的節奏與流動。目前將這份直覺延伸至 VJ 現場調度與 2D/3D 動態設計，專注於流體模擬與金屬質感的視覺實作。</p>
+    <p class="about-text">除了現場執行與動畫製作，我也在專案中擔任 PM 角色負責統籌溝通。近期開始接觸軟體開發，試著優化 VJ 現場執行的流程，並在 Live Effect 的即興實踐中，持續探索技術與視覺感性結合的更多可能。</p>
+    <p class="about-en">Rooted in street dance photography, I translate the rhythm of motion into live VJing and 3D design—specializing in fluids and metallic aesthetics. More than just a creator, I act as a Motion PM, navigating both the technical and creative realms to streamline cross-disciplinary projects and bring complex visual concepts to life.</p>
+      <div class="reveal" style="margin-top: 32px;">
+        <div style="font-size:10px;letter-spacing:.3em;color:var(--muted);text-transform:uppercase;margin-bottom:8px">Since</div>
+        <div style="font-family:'Syne',sans-serif;font-size:52px;font-weight:800;color:var(--accent);line-height:1;letter-spacing:-.02em">2002</div>
+      </div>
+  </div>
+  <div class="about-right reveal reveal-delay-2">
+    <div class="portrait-wrap">
+      <img src="https://raw.githubusercontent.com/kailyn41291-del/pf_photo_1/e8e251a79f1a3222b5bb2c3ec83647e1c86d0234/IMG_4423.jpg" alt="P_HUA portrait">
+      <div class="portrait-label">P_HUA © 2026</div>
+    </div>
+  </div>
+</section>
+
+<!-- EXPERIENCE -->
+<section id="experience">
+  <div class="reveal">
+    <div class="section-label">// WORK_EXPERIENCE_LOG</div>
+    <h2 class="section-title">Experience.</h2>
+  </div>
+  <div class="exp-grid reveal">
+    <div class="exp-col">
+      <div class="exp-year">Since 2025 — PRESENT</div>
+      <div class="exp-role">VJ &<br>Visual Artist</div>
+      <ul class="exp-items">
+        <li class="highlight">2026 全中運</li>
+        <li class="highlight">2026 臺灣燈會</li>
+        <li class="highlight">品冠《三十如一》上海站</li>
+        <li class="highlight">2026 春樂祭</li>
+        <li>四把椅子《太陽》</li>
+        <li>哈特音樂劇團</li>
+        <li>第一屆臺北戲劇獎</li>
+        <li>臺北藝穗節《不存在的那面牆》</li>
+        <li>嚎哮排演《別叫我成功》</li>
+        <li>台灣祭 · 浪人祭 · 風神祭</li>
+        <li>潮派鹿港</li>
+      </ul>
+    </div>
+    <div class="exp-col">
+      <div class="exp-year">Since 2025 — PRESENT</div>
+      <div class="exp-role">Motion Designer<br>2D / 3D</div>
+      <ul class="exp-items">
+        <li class="highlight">范曉萱 Let's Party</li>
+        <li class="highlight">屏東燈節《屏東流》</li>
+        <li class="highlight">2026 春樂祭</li>
+        <li>同志運動會</li>
+        <li>RCBIC 國際霹靂舞賽事 2023–2026</li>
+        <li>NTSO 交響派對</li>
+        <li>鳳小岳 × 壓克力柿子 LOGO</li>
+        <li>浪人祭</li>
+        <li>英語金曲復興運動</li>
+        <li>霹靂魔幻音樂會</li>
+      </ul>
+    </div>
+    <div class="exp-col">
+      <div class="exp-year">Since 2025 — PRESENT</div>
+      <div class="exp-role">Motion<br>Project Manager</div>
+      <ul class="exp-items">
+        <li class="highlight">謝娜《快樂萬歲·我們的青春》成都站 動畫 PM</li>
+        <li class="highlight">同志運動會</li>
+        <li class="highlight">淡江大橋 星空音樂會 · 通車典禮</li>
+        <li>全中運</li>
+        <li>屏東燈會</li>
+      </ul>
+    </div>
+    <div class="exp-col">
+      <div class="exp-year">Since 2020 — PRESENT</div>
+      <div class="exp-role">Street Dance<br>Photographer</div>
+      <ul class="exp-items">
+        <li class="highlight">World Breaking Classic</li>
+        <li class="highlight">Japan Dance Delight</li>
+        <li>霹靂舞國手積分選拔賽</li>
+        <li>台大盃</li>
+        <li>Respect Culture Series 23–25</li>
+        <li>捷運盃</li>
+        <li>街頭自由式</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- WORKS -->
+<section id="works" style="padding-bottom:0">
+  <div class="reveal">
+    <div class="section-label">// SELECTED_WORKS</div>
+    <h2 class="section-title">Works.</h2>
+  </div>
+  <div class="works-grid">
+    <div class="work-item large reveal">
+      <img src="https://raw.githubusercontent.com/kailyn41291-del/pf_photo_1/main/IMG_6862.jpg" alt="品冠 三十如一 巡迴演唱會">
+      <div class="work-overlay">
+        <div class="work-num">01</div>
+        <div class="work-title">品冠《三十如一》巡迴演唱會</div>
+        <div class="work-meta">動畫製作 · Concert Visual</div>
+      </div>
+      <div class="work-arrow">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+      </div>
+    </div>
+    <div class="work-item reveal reveal-delay-1">
+      <img src="https://raw.githubusercontent.com/kailyn41291-del/pf_photo_1/main/IMG_6777.jpg" alt="品冠 上海站">
+      <div class="work-overlay">
+        <div class="work-num">02</div>
+        <div class="work-title">品冠《三十如一》上海站</div>
+        <div class="work-meta">現場執行 · Live Performance</div>
+      </div>
+      <div class="work-arrow">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+      </div>
+    </div>
+    <div class="work-item reveal reveal-delay-2">
+      <img src="https://raw.githubusercontent.com/kailyn41291-del/pf_photo_1/main/IMG_9676.JPG" alt="NTSO交響派對 高雄站">
+      <div class="work-overlay">
+        <div class="work-num">03</div>
+        <div class="work-title">NTSO 交響派對 — 高雄站</div>
+        <div class="work-meta">現場執行 · 動畫製作 · 2024</div>
+      </div>
+      <div class="work-arrow">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+      </div>
+    </div>
+    <div class="work-item reveal reveal-delay-1">
+      <img src="https://raw.githubusercontent.com/kailyn41291-del/pf_photo_1/main/IMG_3842000.jpg" alt="屏東燈會 屏東流">
+      <div class="work-overlay">
+        <div class="work-num">04</div>
+        <div class="work-title">2026 屏東燈會《屏東流》</div>
+        <div class="work-meta">現場執行 · 動畫製作 · 2026</div>
+      </div>
+      <div class="work-arrow">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+      </div>
+    </div>
+    <div class="work-item reveal reveal-delay-2">
+      <img src="https://raw.githubusercontent.com/kailyn41291-del/pf_photo_1/main/IMG_1508.jpg" alt="潮派鹿港">
+      <div class="work-overlay">
+        <div class="work-num">05</div>
+        <div class="work-title">2025 潮派鹿港</div>
+        <div class="work-meta">視覺設計 · 現場執行 · 2025</div>
+      </div>
+      <div class="work-arrow">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+      </div>
+    </div>
+    <div class="work-item large reveal">
+      <img src="https://raw.githubusercontent.com/kailyn41291-del/pf_photo_1/main/IMG_9766.JPG" alt="NTSO交響派對 臺中站">
+      <div class="work-overlay">
+        <div class="work-num">06</div>
+        <div class="work-title">NTSO 交響派對 — 臺中站</div>
+        <div class="work-meta">現場執行 · 動畫製作 · 2024</div>
+      </div>
+      <div class="work-arrow">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+      </div>
+    </div>
+    <div class="work-item reveal reveal-delay-1" style="cursor:pointer" onclick="openLightbox('3d')">
+      <img src="https://raw.githubusercontent.com/kailyn41291-del/pf_photo_1/main/Snake_00124.jpg" alt="3D Design Collection">
+      <div class="work-overlay">
+        <div class="work-num">07</div>
+        <div class="work-title">3D Design Collection</div>
+        <div class="work-meta">Motion · 3D Design · 2025</div>
+      </div>
+      <div class="work-expand-tag">合輯 ↗</div>
+    </div>
+    <div class="work-item reveal reveal-delay-2" style="cursor:pointer" onclick="openLightbox('photo')">
+      <img src="https://raw.githubusercontent.com/kailyn41291-del/photography/main/482004607_2359872704374688_4436047547188418240_n.jpg" alt="Street Dance Photography">
+      <div class="work-overlay">
+        <div class="work-num">08</div>
+        <div class="work-title">Street Dance Photography</div>
+        <div class="work-meta">攝影 · Documentary · 2020–Present</div>
+      </div>
+      <div class="work-expand-tag">合輯 ↗</div>
+    </div>
+  </div>
+</section>
+
+<!-- LIGHTBOX -->
+<div id="lightbox" onclick="closeLightbox(event)">
+  <button class="lb-close" onclick="closeLightbox()">✕</button>
+  <div class="lb-inner" onclick="event.stopPropagation()">
+    <div class="lb-header">
+      <div class="lb-title" id="lb-title"></div>
+      <div class="lb-meta" id="lb-meta"></div>
+    </div>
+    <div class="lb-grid" id="lb-grid"></div>
+  </div>
+</div>
+
+<!-- SKILLS -->
+<section id="skills">
+  <div class="skills-layout">
+    <div class="reveal">
+      <div class="section-label">// TECH_STACK</div>
+      <h2 class="section-title" style="font-size:clamp(28px,4vw,48px)">Tools &<br>Skills.</h2>
+      <p style="font-size:13px;line-height:2;color:rgba(232,232,224,.4);margin-top:16px">橫跨視覺、技術與現場執行的複合型創作者。</p>
+    </div>
+    <div class="reveal reveal-delay-1">
+      <div class="skill-category">
+        <div class="skill-cat-title">VJ &amp; Live</div>
+        <div class="skill-tags">
+          <div class="skill-tag">Resolume Arena</div>
+          <div class="skill-tag">TouchDesigner</div>
+          <div class="skill-tag">Qlab</div>
+          <div class="skill-tag">disguise</div>
+          <div class="skill-tag">...etc</div>
+        </div>
+      </div>
+      <div class="skill-category">
+        <div class="skill-cat-title">Motion &amp; 3D &amp; Design</div>
+        <div class="skill-tags">
+          <div class="skill-tag">After Effects</div>
+          <div class="skill-tag">Blender</div>
+          <div class="skill-tag">Illustrator</div>
+          <div class="skill-tag">...etc</div>
+        </div>
+      </div>
+      <div class="skill-category">
+        <div class="skill-cat-title">Photography</div>
+        <div class="skill-tags">
+          <div class="skill-tag">動態攝影</div>
+          <div class="skill-tag">Lightroom</div>
+          <div class="skill-tag">Photoshop</div>
+          <div class="skill-tag">街舞紀錄</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="contact-bg-text">P_HUA</div>
+  <div class="contact-label">// INSTANT_SYNC</div>
+  <h2 class="contact-title reveal">Let's<br>work<br>together.</h2>
+  <div class="contact-links reveal reveal-delay-1">
+    <a href="mailto:kailyn41291@gmail.com" class="contact-link">
+      <span>MAIL</span> kailyn41291@gmail.com
+    </a>
+    <a href="https://www.instagram.com/peihua_4.12" class="contact-link" target="_blank">
+      <span>IG</span> @peihua_4.12
+    </a>
+    <a href="https://line.me/ti/p/FQqWBPZx61" class="contact-link" target="_blank">
+      <span>LINE</span> 0916602808
+    </a>
+    <a href="tel:+886916602808" class="contact-link">
+      <span>TEL</span> (+886) 916-602-808
+    </a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">P_HUA</div>
+  <div class="footer-copy">© 2026 // STATUS: ACTIVE</div>
+</footer>
+
+<script>
+// ── CURSOR ──
+const outer = document.getElementById('cur-outer');
+const inner = document.getElementById('cur-inner');
+let mx=0,my=0,ox=0,oy=0;
+document.addEventListener('mousemove',e=>{
+  mx=e.clientX; my=e.clientY;
+  inner.style.left=mx+'px'; inner.style.top=my+'px';
+});
+function animCursor(){
+  ox+=(mx-ox)*.1; oy+=(my-oy)*.1;
+  outer.style.left=ox+'px'; outer.style.top=oy+'px';
+  requestAnimationFrame(animCursor);
+}
+animCursor();
+document.querySelectorAll('a,button,.work-item,.tilt').forEach(el=>{
+  el.addEventListener('mouseenter',()=>outer.classList.add('hover'));
+  el.addEventListener('mouseleave',()=>outer.classList.remove('hover'));
+});
+
+// ── HERO CANVAS — WebGL iridescent fluid shader ──
+(function(){
+  const canvas = document.getElementById('hero-canvas');
+  const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+  if(!gl){ canvas.style.display='none'; return; }
+
+  function resize(){
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    gl.viewport(0,0,canvas.width,canvas.height);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const VS = `
+    attribute vec2 a_pos;
+    void main(){ gl_Position = vec4(a_pos,0,1); }
+  `;
+
+  const FS = `
+    precision highp float;
+    uniform float u_time;
+    uniform vec2  u_res;
+    uniform vec2  u_mouse;
+
+    vec3 hsv2rgb(vec3 c){
+      vec4 K=vec4(1.,2./3.,1./3.,3.);
+      vec3 p=abs(fract(c.xxx+K.xyz)*6.-K.www);
+      return c.z*mix(K.xxx,clamp(p-K.xxx,0.,1.),c.y);
+    }
+
+    float hash(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
+
+    float noise(vec2 p){
+      vec2 i=floor(p), f=fract(p);
+      vec2 u=f*f*(3.-2.*f);
+      return mix(
+        mix(hash(i),            hash(i+vec2(1,0)), u.x),
+        mix(hash(i+vec2(0,1)),  hash(i+vec2(1,1)), u.x), u.y);
+    }
+
+    float fbm(vec2 p){
+      float v=0., a=.5;
+      for(int i=0;i<6;i++){
+        v+=a*noise(p);
+        p=p*2.+vec2(1.7,9.2);
+        a*=.5;
+      }
+      return v;
+    }
+
+    void main(){
+      vec2 uv = gl_FragCoord.xy / u_res;
+      vec2 mouse = u_mouse / u_res;
+      float t = u_time * 0.18;
+
+      // mouse distortion
+      vec2 toMouse = uv - mouse;
+      float md = length(toMouse);
+      vec2 distort = toMouse * (1.0 / (md*md*8.0 + 2.0)) * 0.08;
+
+      vec2 q = uv + distort;
+      q.x += 0.1*sin(t*0.7+uv.y*2.1);
+      q.y += 0.1*cos(t*0.5+uv.x*1.8);
+
+      float f1 = fbm(q*2.2 + t*0.4);
+      float f2 = fbm(q*1.8 - vec2(t*0.3, t*0.2));
+      float f3 = fbm(vec2(f1+f2)*1.5 + t*0.25);
+
+      float flow = f1*0.5 + f2*0.3 + f3*0.2;
+
+      // iridescent hue sweep
+      float hue = flow * 1.2 + t*0.08 + uv.x*0.3;
+      float sat = 0.75 + 0.25*sin(f2*6.28);
+      float val = 0.05 + 0.6*pow(flow, 1.4);
+
+      // specular ridge: bright white-blue streaks
+      float ridge = pow(max(0., 1. - abs(fract(flow*3. + t*0.1) - 0.5)*2.8), 3.);
+      float ridge2 = pow(max(0., 1. - abs(fract(flow*5.5 - t*0.07) - 0.5)*3.5), 4.);
+
+      vec3 col = hsv2rgb(vec3(hue, sat, val));
+
+      // chromatic specular: R shift / B shift
+      float rRidge = pow(max(0., 1. - abs(fract(flow*3.+t*.1+.05)-.5)*2.8),3.);
+      float bRidge = pow(max(0., 1. - abs(fract(flow*3.+t*.1-.05)-.5)*2.8),3.);
+      col.r += rRidge * 0.9;
+      col.g += ridge  * 0.85;
+      col.b += bRidge * 1.0;
+      col   += ridge2 * vec3(0.9, 0.95, 1.0);
+
+      // deep black vignette
+      float vig = 1. - smoothstep(0.3, 1.0, length(uv - 0.5)*1.6);
+      col *= vig * 0.88;
+
+      // keep it very dark overall — black with iridescent veins
+      col = mix(vec3(0.02), col, 0.82);
+
+      gl_FragColor = vec4(col, 1.0);
+    }
+  `;
+
+  function compile(type, src){
+    const sh = gl.createShader(type);
+    gl.shaderSource(sh, src);
+    gl.compileShader(sh);
+    return sh;
+  }
+  const prog = gl.createProgram();
+  gl.attachShader(prog, compile(gl.VERTEX_SHADER, VS));
+  gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FS));
+  gl.linkProgram(prog);
+  gl.useProgram(prog);
+
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,1,1]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(prog,'a_pos');
+  gl.enableVertexAttribArray(loc);
+  gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+
+  const uTime  = gl.getUniformLocation(prog,'u_time');
+  const uRes   = gl.getUniformLocation(prog,'u_res');
+  const uMouse = gl.getUniformLocation(prog,'u_mouse');
+
+  let mouseX = window.innerWidth*0.5, mouseY = window.innerHeight*0.5;
+  let smx = mouseX, smy = mouseY;
+  document.addEventListener('mousemove',e=>{
+    mouseX = e.clientX;
+    mouseY = window.innerHeight - e.clientY;
+  });
+
+  function loop(t){
+    smx += (mouseX - smx) * 0.04;
+    smy += (mouseY - smy) * 0.04;
+    gl.uniform1f(uTime, t*0.001);
+    gl.uniform2f(uRes, canvas.width, canvas.height);
+    gl.uniform2f(uMouse, smx, smy);
+    gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+})();
+
+// ── SCROLL REVEAL ──
+const observer=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting)e.target.classList.add('visible');
+  });
+},{threshold:.12});
+document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
+
+// ── COUNT UP ──
+const numObserver=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      const el=e.target;
+      const target=+el.dataset.target;
+      let cur=0;
+      const step=target/40;
+      const t=setInterval(()=>{
+        cur=Math.min(cur+step,target);
+        el.textContent=Math.round(cur)+(target>=10?'+':'');
+        if(cur>=target)clearInterval(t);
+      },30);
+      numObserver.unobserve(el);
+    }
+  });
+},{threshold:.5});
+document.querySelectorAll('.stat-num[data-target]').forEach(el=>numObserver.observe(el));
+
+// ── LIGHTBOX ──
+const collections = {
+  '3d': {
+    title: '3D Design Collection',
+    meta: 'Motion · 3D Design · 2025',
+    items: [
+      { type: 'video', src: 'https://raw.githubusercontent.com/kailyn41291-del/pf_photo_1/main/snake.mp4' },
+      { type: 'video', src: 'https://raw.githubusercontent.com/kailyn41291-del/pf_photo_1/main/chain.mp4' },
+      { type: 'img',   src: 'https://raw.githubusercontent.com/kailyn41291-del/pf_photo_1/main/artwork_3d_00062.jpg' },
+      { type: 'img',   src: 'https://raw.githubusercontent.com/kailyn41291-del/pf_photo_1/main/%E8%83%8C%E6%99%AF%E5%8B%95%E7%95%AB_4.png' },
+    ]
+  },
+  'photo': {
+    title: 'Street Dance Photography',
+    meta: '攝影 · Documentary · 2020–Present',
+    items: [
+      { type: 'img', src: 'https://raw.githubusercontent.com/kailyn41291-del/photography/main/482004607_2359872704374688_4436047547188418240_n.jpg', wide: true },
+      { type: 'img', src: 'https://raw.githubusercontent.com/kailyn41291-del/photography/main/SnapInsta.to_537424293_18516839125031053_3580905490429173066_n.jpg' },
+      { type: 'img', src: 'https://raw.githubusercontent.com/kailyn41291-del/photography/main/485006219_2369094713452487_6483599806470430691_n.jpg' },
+      { type: 'img', src: 'https://raw.githubusercontent.com/kailyn41291-del/photography/main/DSC03951.jpg' },
+      { type: 'img', src: 'https://raw.githubusercontent.com/kailyn41291-del/photography/main/191A6625.jpg' },
+      { type: 'img', src: 'https://raw.githubusercontent.com/kailyn41291-del/photography/main/191A8749.jpg' },
+    ]
+  }
+};
+
+function openLightbox(key) {
+  const col = collections[key];
+  document.getElementById('lb-title').textContent = col.title;
+  document.getElementById('lb-meta').textContent = col.meta;
+  const grid = document.getElementById('lb-grid');
+  grid.innerHTML = col.items.map(item => {
+    const cls = 'lb-item' + (item.wide ? ' wide' : '');
+    if (item.type === 'video') {
+      return `<div class="${cls}"><video src="${item.src}" autoplay loop muted playsinline></video></div>`;
+    }
+    return `<div class="${cls}"><img src="${item.src}" loading="lazy"></div>`;
+  }).join('');
+  document.getElementById('lightbox').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeLightbox(e) {
+  if (e && e.target !== document.getElementById('lightbox') && !e.target.classList.contains('lb-close')) return;
+  document.getElementById('lightbox').classList.remove('open');
+  document.body.style.overflow = '';
+  document.getElementById('lb-grid').innerHTML = '';
+}
+
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeLightbox({target: document.getElementById('lightbox')}); });
+
+
+document.querySelectorAll('a[href^="#"]').forEach(a=>{
+  a.addEventListener('click',e=>{
+    e.preventDefault();
+    const t=document.querySelector(a.getAttribute('href'));
+    if(t)t.scrollIntoView({behavior:'smooth',block:'start'});
+  });
+});
+</script>
+</body>
+</html>
